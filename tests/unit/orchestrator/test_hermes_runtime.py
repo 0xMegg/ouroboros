@@ -1181,6 +1181,26 @@ class TestHermesCliRuntimeChildEnv:
         assert "OUROBOROS_AGENT_RUNTIME" not in env
         assert "OUROBOROS_LLM_BACKEND" not in env
 
+    def test_strips_hermes_gateway_vars(self) -> None:
+        runtime = HermesCliRuntime(cli_path="hermes", cwd="/tmp")
+        with patch.dict(
+            os.environ,
+            {
+                "_HERMES_GATEWAY_CONTEXT": "discord",
+                "_HERMES_GATEWAY_REPLY_TO": "thread",
+                "HERMES_GATEWAY_BUSY_INPUT_MODE": "1",
+                "HERMES_RESTART_DRAIN_TIMEOUT": "30",
+                "HERMES_KEEP_TEST": "kept",
+            },
+        ):
+            env = runtime._build_child_env()
+
+        assert "_HERMES_GATEWAY_CONTEXT" not in env
+        assert "_HERMES_GATEWAY_REPLY_TO" not in env
+        assert "HERMES_GATEWAY_BUSY_INPUT_MODE" not in env
+        assert "HERMES_RESTART_DRAIN_TIMEOUT" not in env
+        assert env["HERMES_KEEP_TEST"] == "kept"
+
     def test_increments_depth(self) -> None:
         runtime = HermesCliRuntime(cli_path="hermes", cwd="/tmp")
         with patch.dict(os.environ, {"_OUROBOROS_DEPTH": "2"}):

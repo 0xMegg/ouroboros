@@ -160,8 +160,8 @@ class HermesCliRuntime(AgentRuntime):
     _display_name = "Hermes CLI"
     _process_shutdown_timeout_seconds = 5.0
     _max_ouroboros_depth = 5
-    _startup_output_timeout_seconds = 60.0
-    _stdout_idle_timeout_seconds = 300.0
+    _startup_output_timeout_seconds = 120.0
+    _stdout_idle_timeout_seconds = 600.0
     _max_stderr_lines = 512
 
     def __init__(
@@ -246,6 +246,15 @@ class HermesCliRuntime(AgentRuntime):
         env = os.environ.copy()
         for key in ("OUROBOROS_AGENT_RUNTIME", "OUROBOROS_LLM_BACKEND"):
             env.pop(key, None)
+        # Strip Hermes gateway-mode markers so child Hermes processes start
+        # in non-interactive CLI mode instead of attempting a Discord/gateway
+        # connection, which blocks stdout and causes stall detection.
+        for key in list(env.keys()):
+            if key.startswith("_HERMES_GATEWAY") or key in (
+                "HERMES_GATEWAY_BUSY_INPUT_MODE",
+                "HERMES_RESTART_DRAIN_TIMEOUT",
+            ):
+                env.pop(key, None)
 
         try:
             depth = int(env.get("_OUROBOROS_DEPTH", "0")) + 1
